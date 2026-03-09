@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ჯეირანი — ონლაინ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --p1: #f4a261;
+      --p2: #e63946;
+      --draw: #2a9d8f;
+      --text: #f0ece3;
+      --muted: #6b6880;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans Georgian', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(244,162,97,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 80%, rgba(230,57,70,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 640px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 20px;
+    }
+
+    /* HEADER */
+    .title {
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      font-weight: 900; letter-spacing: -2px;
+      background: linear-gradient(135deg, var(--p1), var(--p2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1;
+    }
+    .subtitle {
+      font-size: 0.7rem; color: var(--muted);
+      letter-spacing: 4px; font-family: 'Space Mono', monospace; margin-top: 2px;
+    }
+
+    /* LOBBY */
+    #lobbyScreen {
+      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+
+    .lobby-card {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+      display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+
+    .lobby-card h2 {
+      font-size: 0.7rem; letter-spacing: 3px; color: var(--muted);
+      font-family: 'Space Mono', monospace; text-transform: uppercase;
+    }
+
+    .big-btn {
+      width: 100%; padding: 16px;
+      border-radius: 12px; border: none;
+      font-family: 'Noto Sans Georgian', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+
+    .btn-create {
+      background: linear-gradient(135deg, rgba(244,162,97,0.2), rgba(244,162,97,0.05));
+      border: 1px solid rgba(244,162,97,0.4); color: var(--p1);
+    }
+    .btn-create:hover { background: linear-gradient(135deg, rgba(244,162,97,0.3), rgba(244,162,97,0.1)); transform: translateY(-2px); }
+
+    .btn-join {
+      background: linear-gradient(135deg, rgba(230,57,70,0.2), rgba(230,57,70,0.05));
+      border: 1px solid rgba(230,57,70,0.4); color: var(--p2);
+    }
+    .btn-join:hover { background: linear-gradient(135deg, rgba(230,57,70,0.3), rgba(230,57,70,0.1)); transform: translateY(-2px); }
+
+    .code-input {
+      width: 100%; padding: 14px; border-radius: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: 'Space Mono', monospace;
+      font-size: 1.3rem; letter-spacing: 6px; text-align: center;
+      text-transform: uppercase; outline: none;
+      transition: border-color 0.2s;
+    }
+    .code-input:focus { border-color: var(--p2); }
+
+    .divider {
+      width: 100%; height: 1px; background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .divider span {
+      background: var(--surface); padding: 0 12px;
+      font-size: 0.65rem; color: var(--muted);
+      font-family: 'Space Mono', monospace; letter-spacing: 2px;
+    }
+
+    /* WAITING */
+    #waitingScreen {
+      width: 100%; display: none; flex-direction: column;
+      align-items: center; gap: 20px; text-align: center;
+    }
+
+    .room-code-display {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; width: 100%;
+    }
+
+    .room-code-label {
+      font-size: 0.65rem; letter-spacing: 4px; color: var(--muted);
+      font-family: 'Space Mono', monospace; margin-bottom: 12px;
+    }
+
+    .room-code-big {
+      font-size: 3rem; font-weight: 700;
+      font-family: 'Space Mono', monospace;
+      color: var(--p1); letter-spacing: 12px;
+    }
+
+    .copy-link-btn {
+      margin-top: 16px; padding: 10px 20px;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px;
+      font-family: 'Space Mono', monospace; font-size: 0.65rem;
+      letter-spacing: 2px; cursor: pointer; transition: all 0.2s;
+    }
+    .copy-link-btn:hover { border-color: var(--p1); color: var(--p1); }
+
+    .waiting-pulse {
+      font-size: 0.75rem; color: var(--muted);
+      font-family: 'Space Mono', monospace; letter-spacing: 2px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* GAME */
+    #gameScreen { width: 100%; display: none; flex-direction: column; align-items: center; gap: 18px; }
+
+    .role-badge {
+      font-size: 0.65rem; letter-spacing: 3px;
+      font-family: 'Space Mono', monospace; padding: 6px 14px;
+      border-radius: 20px; font-weight: 700;
+    }
+    .role-badge.p1 { background: rgba(244,162,97,0.12); border: 1px solid rgba(244,162,97,0.3); color: var(--p1); }
+    .role-badge.p2 { background: rgba(230,57,70,0.12); border: 1px solid rgba(230,57,70,0.3); color: var(--p2); }
+
+    .scoreboard {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      gap: 12px; align-items: center; width: 100%;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 24px;
+    }
+    .score-side { text-align: center; }
+    .score-label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 2px; }
+    .score-num { font-size: 2.6rem; font-weight: 900; font-family: 'Space Mono', monospace; line-height: 1; }
+    .score-p1 .score-num { color: var(--p1); }
+    .score-p2 .score-num { color: var(--p2); }
+    .score-divider { font-size: 1.4rem; color: var(--border); font-family: 'Space Mono', monospace; }
+
+    .arena {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 12px; width: 100%; min-height: 130px;
+    }
+    .player-display { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .hand-display {
+      width: 90px; height: 90px; border-radius: 18px;
+      background: var(--surface); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .hand-display.p1-glow { border-color: var(--p1); box-shadow: 0 0 24px rgba(244,162,97,0.25); transform: scale(1.05); }
+    .hand-display.p2-glow { border-color: var(--p2); box-shadow: 0 0 24px rgba(230,57,70,0.25); transform: scale(1.05); }
+    .hand-display.draw-glow { border-color: var(--draw); box-shadow: 0 0 20px rgba(42,157,143,0.2); }
+    .player-tag { font-size: 0.65rem; letter-spacing: 2px; color: var(--muted); font-family: 'Space Mono', monospace; }
+    .vs-text { font-size: 1.1rem; font-weight: 700; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+    .result-display { height: 44px; display: flex; align-items: center; justify-content: center; }
+    .result-text {
+      font-size: 1.2rem; font-weight: 700;
+      opacity: 0; transform: translateY(8px);
+      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .result-text.show { opacity: 1; transform: translateY(0); }
+    .result-text.p1win { color: var(--p1); }
+    .result-text.p2win { color: var(--p2); }
+    .result-text.draw { color: var(--draw); }
+
+    .choices {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 10px; width: 100%;
+    }
+    .choice-btn {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 14px; padding: 14px 6px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+      color: var(--text); font-family: 'Noto Sans Georgian', sans-serif;
+    }
+    .choice-btn:hover { transform: translateY(-3px); }
+    .choice-btn.my-p1:hover { border-color: var(--p1); box-shadow: 0 8px 24px rgba(244,162,97,0.2); }
+    .choice-btn.my-p2:hover { border-color: var(--p2); box-shadow: 0 8px 24px rgba(230,57,70,0.2); }
+    .choice-btn.selected { transform: scale(1.04); }
+    .choice-btn.selected.my-p1 { border-color: var(--p1); background: rgba(244,162,97,0.08); }
+    .choice-btn.selected.my-p2 { border-color: var(--p2); background: rgba(230,57,70,0.08); }
+    .choice-btn.disabled { opacity: 0.35; pointer-events: none; }
+    .choice-btn .ce { font-size: 2rem; }
+    .choice-btn .cl { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
+
+    .status-bar {
+      font-size: 0.65rem; font-family: 'Space Mono', monospace;
+      letter-spacing: 2px; color: var(--muted); text-align: center;
+      min-height: 20px;
+    }
+
+    .history { width: 100%; }
+    .history-title { font-size: 0.6rem; letter-spacing: 4px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 6px; }
+    .history-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .history-item {
+      font-size: 0.6rem; font-family: 'Space Mono', monospace;
+      padding: 3px 8px; border-radius: 6px;
+      border: 1px solid var(--border); color: var(--muted);
+      background: var(--surface); animation: fadeIn 0.3s ease;
+    }
+    .history-item.p1 { border-color: rgba(244,162,97,0.4); color: var(--p1); }
+    .history-item.p2 { border-color: rgba(230,57,70,0.4); color: var(--p2); }
+    .history-item.d { border-color: rgba(42,157,143,0.4); color: var(--draw); }
+
+    .bottom-btns { display: flex; gap: 10px; }
+    .ghost-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); padding: 8px 18px; border-radius: 8px;
+      cursor: pointer; font-family: 'Space Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 2px; transition: all 0.2s;
+    }
+    .ghost-btn:hover { border-color: var(--p2); color: var(--p2); }
+
+    /* DISCONNECTED */
+    #disconnectedScreen {
+      display: none; flex-direction: column;
+      align-items: center; gap: 16px; text-align: center;
+    }
+    .disc-icon { font-size: 3rem; }
+    .disc-text { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; letter-spacing: 2px; }
+
+    @keyframes shake {
+      0%,100%{transform:rotate(0)scale(1)} 20%{transform:rotate(-15deg)scale(1.1)}
+      40%{transform:rotate(15deg)scale(1.1)} 60%{transform:rotate(-10deg)scale(1.05)}
+      80%{transform:rotate(10deg)scale(1.05)}
+    }
+    @keyframes fadeIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+    .shaking { animation: shake 0.7s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+
+    .error-msg { color: var(--p2); font-size: 0.75rem; font-family: 'Space Mono', monospace; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div style="text-align:center">
+    <div class="title">ჯეირანი</div>
+    <div class="subtitle">ჭა · მაკრატელი · ქვა · ონლაინ</div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobbyScreen">
+    <div class="lobby-card">
+      <h2>ახალი თამაში</h2>
+      <button class="big-btn btn-create" onclick="createRoom()">🎮 ოთახის შექმნა</button>
+      <div class="divider"><span>ან</span></div>
+      <input class="code-input" id="joinCode" placeholder="ᲙᲝᲓᲘ" maxlength="6">
+      <button class="big-btn btn-join" onclick="joinRoom()">🔗 შეერთება</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+  </div>
+
+  <!-- WAITING -->
+  <div id="waitingScreen">
+    <div class="room-code-display">
+      <div class="room-code-label">ოთახის კოდი</div>
+      <div class="room-code-big" id="roomCodeDisplay">——</div>
+      <br>
+      <button class="copy-link-btn" onclick="copyLink()">📋 ლინკის კოპირება</button>
+    </div>
+    <div class="waiting-pulse">⏳ მეგობარს ველოდები...</div>
+  </div>
+
+  <!-- GAME -->
+  <div id="gameScreen">
+    <div class="role-badge" id="roleBadge">მოთ. 1</div>
+
+    <div class="scoreboard">
+      <div class="score-side score-p1">
+        <div class="score-label">მოთ. 1</div>
+        <div class="score-num" id="scoreP1">0</div>
+      </div>
+      <div class="score-divider">:</div>
+      <div class="score-side score-p2">
+        <div class="score-num" id="scoreP2">0</div>
+        <div class="score-label">მოთ. 2</div>
+      </div>
+    </div>
+
+    <div class="arena">
+      <div class="player-display">
+        <div class="hand-display" id="hand1">🤜</div>
+        <div class="player-tag">მოთ. 1</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="player-display">
+        <div class="hand-display" id="hand2">🤛</div>
+        <div class="player-tag">მოთ. 2</div>
+      </div>
+    </div>
+
+    <div class="result-display">
+      <div class="result-text" id="resultText"></div>
+    </div>
+
+    <div class="status-bar" id="statusBar">აირჩიე ხელი!</div>
+
+    <div class="choices" id="choicesDiv">
+      <button class="choice-btn" onclick="choose('ჭა')">
+        <span class="ce">✊</span><span class="cl">ჭა</span>
+      </button>
+      <button class="choice-btn" onclick="choose('მაკრატელი')">
+        <span class="ce">✌️</span><span class="cl">მაკრატელი</span>
+      </button>
+      <button class="choice-btn" onclick="choose('ქვა')">
+        <span class="ce">🖐️</span><span class="cl">ქვა</span>
+      </button>
+    </div>
+
+    <div class="history" id="historySection" style="display:none">
+      <div class="history-title">ისტორია</div>
+      <div class="history-row" id="historyRow"></div>
+    </div>
+
+    <div class="bottom-btns">
+      <button class="ghost-btn" onclick="resetScores()">↺ ქულების განულება</button>
+      <button class="ghost-btn" onclick="goLobby()">🚪 გასვლა</button>
+    </div>
+  </div>
+
+  <!-- DISCONNECTED -->
+  <div id="disconnectedScreen">
+    <div class="disc-icon">🔌</div>
+    <div class="disc-text">მოთამაშე გავიდა</div>
+    <button class="big-btn btn-create" style="max-width:240px" onclick="goLobby()">← მთავარი მენიუ</button>
+  </div>
+</div>
+
+<script>
+  const emojis = { 'ჭა':'✊', 'მაკრატელი':'✌️', 'ქვა':'🖐️' };
+  let ws = null;
+  let myRole = null;
+  let myRoomId = null;
+  let chosen = false;
+  let history = [];
+
+  function getWsUrl() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${proto}://${location.host}`;
+  }
+
+  function connect(onOpen) {
+    ws = new WebSocket(getWsUrl());
+    ws.onopen = onOpen;
+    ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+    ws.onclose = () => {
+      if (document.getElementById('gameScreen').style.display !== 'none') {
+        showDisconnected();
+      }
+    };
+  }
+
+  function send(data) {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify(data));
+  }
+
+  function createRoom() {
+    connect(() => send({ type: 'create' }));
+  }
+
+  function joinRoom() {
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    if (!code) return;
+    connect(() => send({ type: 'join', roomId: code }));
+  }
+
+  function handleMessage(msg) {
+    if (msg.type === 'created') {
+      myRoomId = msg.roomId;
+      document.getElementById('roomCodeDisplay').textContent = msg.roomId;
+      show('waitingScreen');
+    }
+
+    else if (msg.type === 'error') {
+      document.getElementById('errorMsg').textContent = msg.message;
+    }
+
+    else if (msg.type === 'start') {
+      myRole = msg.role;
+      show('gameScreen');
+      const badge = document.getElementById('roleBadge');
+      badge.textContent = myRole === 'p1' ? 'შენ ხარ მოთ. 1' : 'შენ ხარ მოთ. 2';
+      badge.className = 'role-badge ' + myRole;
+      document.querySelectorAll('.choice-btn').forEach(b => {
+        b.classList.add(myRole === 'p1' ? 'my-p1' : 'my-p2');
+      });
+      setStatus('🎮 თამაში დაიწყო! აირჩიე ხელი!');
+    }
+
+    else if (msg.type === 'you_chose') {
+      setStatus('✓ არჩეულია — მოწინააღმდეგეს ველოდები...');
+    }
+
+    else if (msg.type === 'opponent_chose') {
+      if (!chosen) setStatus('⏳ მოწინააღმდეგემ ირჩია — შენი ჯერია!');
+      else setStatus('✓ ორივე ირჩია — ვხსნით...');
+    }
+
+    else if (msg.type === 'reveal') {
+      revealHands(msg);
+    }
+
+    else if (msg.type === 'reset_done') {
+      document.getElementById('scoreP1').textContent = 0;
+      document.getElementById('scoreP2').textContent = 0;
+      history = [];
+      document.getElementById('historySection').style.display = 'none';
+      document.getElementById('historyRow').innerHTML = '';
+      resetRound();
+    }
+
+    else if (msg.type === 'opponent_left') {
+      showDisconnected();
+    }
+  }
+
+  function choose(choice) {
+    if (chosen) return;
+    chosen = true;
+    document.querySelectorAll('.choice-btn').forEach(b => {
+      b.classList.add('disabled');
+    });
+    // highlight chosen
+    const idx = ['ჭა','მაკრატელი','ქვა'].indexOf(choice);
+    const btn = document.querySelectorAll('.choice-btn')[idx];
+    btn.classList.remove('disabled');
+    btn.classList.add('selected');
+
+    send({ type: 'choose', choice });
+  }
+
+  function revealHands(msg) {
+    const h1 = document.getElementById('hand1');
+    const h2 = document.getElementById('hand2');
+    h1.textContent = '🤜'; h2.textContent = '🤛';
+    h1.className = 'hand-display shaking';
+    h2.className = 'hand-display shaking';
+
+    setTimeout(() => {
+      h1.classList.remove('shaking');
+      h2.classList.remove('shaking');
+      h1.textContent = emojis[msg.p1choice];
+      h2.textContent = emojis[msg.p2choice];
+
+      document.getElementById('scoreP1').textContent = msg.scores.p1;
+      document.getElementById('scoreP2').textContent = msg.scores.p2;
+
+      let resultText, resultClass, histClass;
+      if (msg.result === 'draw') {
+        resultText = '🤝 ფრე!'; resultClass = 'draw'; histClass = 'd';
+        h1.classList.add('draw-glow'); h2.classList.add('draw-glow');
+      } else if (msg.result === 'p1') {
+        resultText = myRole === 'p1' ? '🎉 გაიმარჯვე!' : '💀 წააგე!';
+        resultClass = 'p1win'; histClass = 'p1';
+        h1.classList.add('p1-glow');
+      } else {
+        resultText = myRole === 'p2' ? '🎉 გაიმარჯვე!' : '💀 წააგე!';
+        resultClass = 'p2win'; histClass = 'p2';
+        h2.classList.add('p2-glow');
+      }
+
+      const el = document.getElementById('resultText');
+      el.textContent = resultText;
+      el.className = 'result-text show ' + resultClass;
+
+      const s1 = msg.p1choice === 'მაკრატელი' ? 'მაკ' : msg.p1choice;
+      const s2 = msg.p2choice === 'მაკრატელი' ? 'მაკ' : msg.p2choice;
+      history.unshift({ cls: histClass, text: `${s1} vs ${s2}` });
+      if (history.length > 8) history.pop();
+      renderHistory();
+
+      setTimeout(() => resetRound(), 1500);
+    }, 800);
+  }
+
+  function resetRound() {
+    chosen = false;
+    document.getElementById('hand1').className = 'hand-display';
+    document.getElementById('hand2').className = 'hand-display';
+    document.getElementById('hand1').textContent = '🤜';
+    document.getElementById('hand2').textContent = '🤛';
+    document.getElementById('resultText').className = 'result-text';
+    document.querySelectorAll('.choice-btn').forEach(b => {
+      b.classList.remove('disabled','selected');
+    });
+    setStatus('🎮 ახალი რაუნდი — აირჩიე ხელი!');
+  }
+
+  function resetScores() { send({ type: 'reset' }); }
+
+  function renderHistory() {
+    document.getElementById('historySection').style.display = 'flex';
+    document.getElementById('historyRow').innerHTML = history.map(h =>
+      `<span class="history-item ${h.cls}">${h.text}</span>`
+    ).join('');
+  }
+
+  function setStatus(text) {
+    document.getElementById('statusBar').textContent = text;
+  }
+
+  function copyLink() {
+    const url = `${location.origin}?room=${myRoomId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.querySelector('.copy-link-btn');
+      btn.textContent = '✓ დაკოპირდა!';
+      setTimeout(() => btn.textContent = '📋 ლინკის კოპირება', 2000);
+    });
+  }
+
+  function show(screenId) {
+    ['lobbyScreen','waitingScreen','gameScreen','disconnectedScreen'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.display = id === screenId ? 'flex' : 'none';
+    });
+  }
+
+  function showDisconnected() { show('disconnectedScreen'); }
+
+  function goLobby() {
+    if (ws) { ws.close(); ws = null; }
+    myRole = null; myRoomId = null; chosen = false; history = [];
+    document.getElementById('joinCode').value = '';
+    document.getElementById('errorMsg').textContent = '';
+    document.getElementById('scoreP1').textContent = 0;
+    document.getElementById('scoreP2').textContent = 0;
+    show('lobbyScreen');
+  }
+
+  // Auto-join from URL
+  window.onload = () => {
+    const params = new URLSearchParams(location.search);
+    const room = params.get('room');
+    if (room) {
+      document.getElementById('joinCode').value = room;
+      joinRoom();
+    }
+  };
+</script>
+</body>
+</html>
